@@ -41,6 +41,7 @@ fun RYWebView(
     baseUrl: String? = null,
     refererDomain: String? = null,
     onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
+    onVideoFullscreenChanged: ((Boolean) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val resolvedBaseUrl = WebViewHtml.resolveBaseUrl(baseUrl)
@@ -90,6 +91,7 @@ fun RYWebView(
                             },
                         ),
                     onImageClick = onImageClick,
+                    onFullscreenChanged = onVideoFullscreenChanged,
                 )
             )
         }

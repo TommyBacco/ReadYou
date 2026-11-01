@@ -51,6 +51,7 @@
         <activity
             android:name=".infrastructure.android.MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.Reader"
             android:windowSoftInputMode="adjustResize">
