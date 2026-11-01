@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -49,7 +48,6 @@ fun RYWebView(
         remember(content, resolvedBaseUrl) {
             WebViewContent.rewrite(content, resolvedBaseUrl)
         }
-    val maxWidth = LocalConfiguration.current.screenWidthDp.dp.value
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val tonalElevation = LocalReadingPageTonalElevation.current
@@ -103,47 +101,76 @@ fun RYWebView(
             "/android_res/font/google_sans_flex.ttf"
         } else null
 
+    val dataToLoad =
+        remember(
+            resolvedBaseUrl,
+            renderedContent,
+            fontSize,
+            fontPath,
+            lineHeight,
+            letterSpacing,
+            textMargin,
+            textColor,
+            textBold,
+            textAlign,
+            boldTextColor,
+            subheadBold,
+            subheadUpperCase,
+            imgMargin,
+            imgBorderRadius,
+            linkTextColor,
+            codeTextColor,
+            codeBgColor,
+            selectionTextColor,
+            selectionBgColor,
+            boldCharacters,
+        ) {
+            WebViewHtml.HTML.format(
+                WebViewStyle.get(
+                    fontSize = fontSize,
+                    fontPath = fontPath,
+                    lineHeight = lineHeight,
+                    letterSpacing = letterSpacing,
+                    textMargin = textMargin,
+                    textColor = textColor,
+                    textBold = textBold,
+                    textAlign = textAlign,
+                    boldTextColor = boldTextColor,
+                    subheadBold = subheadBold,
+                    subheadUpperCase = subheadUpperCase,
+                    imgMargin = imgMargin,
+                    imgBorderRadius = imgBorderRadius,
+                    linkTextColor = linkTextColor,
+                    codeTextColor = codeTextColor,
+                    codeBgColor = codeBgColor,
+                    tableMargin = textMargin,
+                    selectionTextColor = selectionTextColor,
+                    selectionBgColor = selectionBgColor,
+                ),
+                WebViewHtml.escapeAttribute(resolvedBaseUrl),
+                renderedContent,
+                WebViewScript.get(boldCharacters.value),
+            )
+        }
+    val lastLoadedData = remember { mutableStateOf<String?>(null) }
+
     AndroidView(
         modifier = modifier,
         factory = { webView },
         update = {
             it.apply {
-                Log.i("RLog", "maxWidth: ${maxWidth}")
-                Log.i("RLog", "readingFont: ${context.filesDir.absolutePath}")
-                Log.i("RLog", "CustomWebView: $renderedContent")
                 settings.defaultFontSize = fontSize
-                loadDataWithBaseURL(
-                    resolvedBaseUrl.ifBlank { null },
-                    WebViewHtml.HTML.format(
-                        WebViewStyle.get(
-                            fontSize = fontSize,
-                            fontPath = fontPath,
-                            lineHeight = lineHeight,
-                            letterSpacing = letterSpacing,
-                            textMargin = textMargin,
-                            textColor = textColor,
-                            textBold = textBold,
-                            textAlign = textAlign,
-                            boldTextColor = boldTextColor,
-                            subheadBold = subheadBold,
-                            subheadUpperCase = subheadUpperCase,
-                            imgMargin = imgMargin,
-                            imgBorderRadius = imgBorderRadius,
-                            linkTextColor = linkTextColor,
-                            codeTextColor = codeTextColor,
-                            codeBgColor = codeBgColor,
-                            tableMargin = textMargin,
-                            selectionTextColor = selectionTextColor,
-                            selectionBgColor = selectionBgColor,
-                        ),
-                        WebViewHtml.escapeAttribute(resolvedBaseUrl),
-                        renderedContent,
-                        WebViewScript.get(boldCharacters.value),
-                    ),
-                    "text/HTML",
-                    "UTF-8",
-                    null,
-                )
+                if (lastLoadedData.value != dataToLoad) {
+                    lastLoadedData.value = dataToLoad
+                    Log.i("RLog", "CustomWebView: $renderedContent")
+                    loadDataWithBaseURL(
+                        resolvedBaseUrl.ifBlank { null },
+                        dataToLoad,
+                        "text/HTML",
+                        "UTF-8",
+                        null,
+                    )
+                }
             }
         },
     )
