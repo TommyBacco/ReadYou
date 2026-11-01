@@ -9,6 +9,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import me.ash.reader.R
+import me.ash.reader.ui.component.reader.getVideo
+import me.ash.reader.ui.component.reader.isYoutubeEmbed
 import me.ash.reader.ui.ext.isUrl
 import java.io.DataInputStream
 import java.net.HttpURLConnection
@@ -19,6 +22,7 @@ const val INJECTION_TOKEN = "/android_asset_font/"
 class WebViewClient(
     private val context: Context,
     private val refererDomain: String?,
+    private val userAgent: String? = null,
     private val onOpenLink: (url: String) -> Unit,
 ) : WebViewClient() {
 
@@ -27,6 +31,21 @@ class WebViewClient(
         request: WebResourceRequest?,
     ): WebResourceResponse? {
         val url = request?.url?.toString()
+        if (url != null && request?.isForMainFrame == false) {
+            val video = getVideo(url)
+            if (video != null && !video.isYoutubeEmbed()) {
+                fetchEmbed(url)?.let { return it }
+                return WebResourceResponse(
+                    "text/html",
+                    "UTF-8",
+                    WebViewHtml.videoFallback(
+                            video,
+                            context.getString(R.string.touch_to_play_video),
+                        )
+                        .byteInputStream(),
+                )
+            }
+        }
         if (url != null && url.contains(INJECTION_TOKEN)) {
             try {
                 val assetPath = url.substring(
@@ -81,6 +100,30 @@ class WebViewClient(
 
     override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
         handler?.cancel()
+    }
+
+    private fun fetchEmbed(url: String): WebResourceResponse? = try {
+        val connection = URI(url).toURL().openConnection() as HttpURLConnection
+        connection.connectTimeout = 5000
+        connection.readTimeout = 10000
+        userAgent?.let { connection.setRequestProperty("User-Agent", it) }
+        if (connection.responseCode !in 200..299) {
+            connection.disconnect()
+            null
+        } else {
+            val contentType = connection.contentType.orEmpty()
+            val mimeType =
+                contentType.substringBefore(';').trim().takeIf { it.isNotEmpty() } ?: "text/html"
+            val charset =
+                Regex("charset=([^;\\s]+)", RegexOption.IGNORE_CASE)
+                    .find(contentType)
+                    ?.groupValues
+                    ?.get(1) ?: "UTF-8"
+            WebResourceResponse(mimeType, charset, connection.inputStream)
+        }
+    } catch (e: Exception) {
+        Log.e("RLog", "fetchEmbed: $e")
+        null
     }
 
     companion object {

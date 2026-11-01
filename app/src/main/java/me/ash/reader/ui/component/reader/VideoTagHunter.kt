@@ -20,25 +20,50 @@
 
 package me.ash.reader.ui.component.reader
 
+import java.net.URI
+
 // Example strings
 // www.youtube.com/embed/cjxnVO9RpaQ
 // www.youtube.com/embed/cjxnVO9RpaQ?feature=oembed
 // www.youtube.com/embed/cjxnVO9RpaQ/theoretical_crap
 // www.youtube.com/embed/cjxnVO9RpaQ/crap?feature=oembed
-internal val YoutubeIdPattern = "youtube.com/embed/([^?/]*)".toRegex()
+internal val YoutubeIdPattern =
+    "(?:youtube\\.com|youtube-nocookie\\.com)/embed/([^?/]*)".toRegex()
+internal val EmbedIdPattern = "/embed/([^?/]+)".toRegex()
+internal val YoutubeVideoIdPattern = "[A-Za-z0-9_-]{11}".toRegex()
 
 fun getVideo(src: String?): Video? {
-    return src?.let {
-        YoutubeIdPattern.find(src)?.let { match ->
-            val videoId = match.groupValues[1]
-            Video(
-                src = src,
-                imageUrl = "http://img.youtube.com/vi/$videoId/hqdefault.jpg",
-                link = "https://www.youtube.com/watch?v=$videoId"
-            )
-        }
+    src ?: return null
+
+    YoutubeIdPattern.find(src)?.let { match ->
+        val videoId = match.groupValues[1]
+        return Video(
+            src = src,
+            imageUrl = "http://img.youtube.com/vi/$videoId/hqdefault.jpg",
+            link = "https://www.youtube.com/watch?v=$videoId"
+        )
     }
+
+    val videoId =
+        EmbedIdPattern.find(src)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+            ?: return null
+    val uri = runCatching { URI(src) }.getOrNull() ?: return null
+    val isInvidious = uri.host?.contains("invidious", ignoreCase = true) == true
+    if (!isInvidious && !YoutubeVideoIdPattern.matches(videoId)) return null
+
+    val scheme = uri.scheme ?: return null
+    val authority = uri.authority ?: return null
+    val origin = "$scheme://$authority"
+
+    return Video(
+        src = src,
+        imageUrl = "$origin/vi/$videoId/hqdefault.jpg",
+        link = "$origin/watch?v=$videoId"
+    )
 }
+
+fun Video.isYoutubeEmbed(): Boolean =
+    src.contains("youtube.com/embed/") || src.contains("youtube-nocookie.com/embed/")
 
 data class Video(
     val src: String,

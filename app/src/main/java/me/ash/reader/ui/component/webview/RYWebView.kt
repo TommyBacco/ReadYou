@@ -1,6 +1,7 @@
 package me.ash.reader.ui.component.webview
 
 import android.util.Log
+import android.webkit.WebSettings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,6 +82,7 @@ fun RYWebView(
                         WebViewClient(
                             context = context,
                             refererDomain = refererDomain,
+                            userAgent = WebSettings.getDefaultUserAgent(context),
                             onOpenLink = { url ->
                                 context.openURL(url, openLink, openLinkSpecificBrowser)
                             },
