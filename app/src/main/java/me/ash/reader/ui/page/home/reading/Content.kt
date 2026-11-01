@@ -17,12 +17,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import java.util.Date
+import kotlinx.coroutines.launch
 import me.ash.reader.infrastructure.preference.LocalReadingRenderer
 import me.ash.reader.infrastructure.preference.LocalReadingSubheadUpperCase
 import me.ash.reader.infrastructure.preference.ReadingRendererPreference
@@ -76,6 +83,9 @@ fun Content(
         Column { LoadingIndicator(modifier = Modifier.size(56.dp)) }
     } else {
 
+        val scope = rememberCoroutineScope()
+        var fullscreenScrollPosition by remember { mutableIntStateOf(0) }
+
         when (renderer) {
             ReadingRendererPreference.WebView -> {
                 Column(
@@ -101,6 +111,30 @@ fun Content(
                                 baseUrl = link,
                                 refererDomain = link.extractDomain(),
                                 onImageClick = onImageClick,
+                                onVideoFullscreenChanged = { isFullscreen ->
+                                    if (isFullscreen) {
+                                        fullscreenScrollPosition = scrollState.value
+                                    } else if (scrollState.value < fullscreenScrollPosition) {
+                                        val target = fullscreenScrollPosition
+                                        scope.launch {
+                                            var restorations = 0
+                                            repeat(240) {
+                                                withFrameNanos {}
+                                                if (scrollState.maxValue >= target) {
+                                                    when {
+                                                        scrollState.value >= target - 100 ->
+                                                            return@launch
+                                                        restorations < 6 -> {
+                                                            restorations++
+                                                            scrollState.scrollTo(target)
+                                                        }
+                                                        else -> return@launch
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                             )
                             Spacer(modifier = Modifier.height(128.dp))
                             Spacer(

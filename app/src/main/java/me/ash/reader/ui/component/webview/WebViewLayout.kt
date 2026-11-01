@@ -15,9 +15,11 @@ object WebViewLayout {
         readingFontsPreference: ReadingFontsPreference,
         webViewClient: WebViewClient,
         onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
+        onFullscreenChanged: ((Boolean) -> Unit)? = null,
     ) =
         WebView(context).apply {
             this.webViewClient = webViewClient
+            this.webChromeClient = WebViewChromeClient(context, onFullscreenChanged)
             scrollBarSize = 0
             isHorizontalScrollBarEnabled = false
             isVerticalScrollBarEnabled = true
