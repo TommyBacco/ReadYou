@@ -45,6 +45,10 @@ fun RYWebView(
 ) {
     val context = LocalContext.current
     val resolvedBaseUrl = WebViewHtml.resolveBaseUrl(baseUrl)
+    val renderedContent =
+        remember(content, resolvedBaseUrl) {
+            WebViewContent.rewrite(content, resolvedBaseUrl)
+        }
     val maxWidth = LocalConfiguration.current.screenWidthDp.dp.value
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
@@ -106,7 +110,7 @@ fun RYWebView(
             it.apply {
                 Log.i("RLog", "maxWidth: ${maxWidth}")
                 Log.i("RLog", "readingFont: ${context.filesDir.absolutePath}")
-                Log.i("RLog", "CustomWebView: ${content}")
+                Log.i("RLog", "CustomWebView: $renderedContent")
                 settings.defaultFontSize = fontSize
                 loadDataWithBaseURL(
                     resolvedBaseUrl.ifBlank { null },
@@ -133,7 +137,7 @@ fun RYWebView(
                             selectionBgColor = selectionBgColor,
                         ),
                         WebViewHtml.escapeAttribute(resolvedBaseUrl),
-                        content,
+                        renderedContent,
                         WebViewScript.get(boldCharacters.value),
                     ),
                     "text/HTML",
