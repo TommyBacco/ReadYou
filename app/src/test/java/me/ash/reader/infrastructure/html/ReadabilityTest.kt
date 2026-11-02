@@ -53,6 +53,19 @@ class ReadabilityTest {
     }
 
     @Test
+    fun testParseToTextStripsAudioPlayerPlaceholder() {
+        assertEquals(
+            "The lead paragraph of the article.",
+            Readability.parseToText(
+                "<div id=\"audioPlayerArticle\" data-mp3=\"https://example.com/a.mp3\"" +
+                    " data-id=\"1\">Caricamento player</div>" +
+                    "<p>The lead paragraph of the article.</p>",
+                "https://example.com/post",
+            ),
+        )
+    }
+
+    @Test
     fun testParseToTextImageOnlyDescriptionIsEmpty() {
         assertEquals(
             "",

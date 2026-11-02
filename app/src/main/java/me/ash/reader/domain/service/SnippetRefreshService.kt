@@ -2,8 +2,8 @@ package me.ash.reader.domain.service
 
 import android.content.Context
 import android.util.Log
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -23,8 +23,9 @@ class SnippetRefreshService @Inject constructor(
 ) {
 
     suspend fun refreshSnippetWithCaptions() = withContext(ioDispatcher) {
-        val key = booleanPreferencesKey("snippetWithCaptionsRefreshed")
-        if (context.dataStore.data.first()[key] == true) return@withContext
+        val key = intPreferencesKey("snippetRefreshVersion")
+        val refreshedVersion = context.dataStore.data.first()[key] ?: 0
+        if (refreshedVersion >= SNIPPET_VERSION) return@withContext
         var afterId = ""
         var updated = 0
         while (true) {
@@ -41,11 +42,12 @@ class SnippetRefreshService @Inject constructor(
             }
             afterId = candidates.last().id
         }
-        context.dataStore.edit { preferences -> preferences[key] = true }
+        context.dataStore.edit { preferences -> preferences[key] = SNIPPET_VERSION }
         Log.i("RLog", "refreshSnippetWithCaptions: $updated snippets updated")
     }
 
     companion object {
+        private const val SNIPPET_VERSION = 2
         private const val PAGE_SIZE = 500
     }
 }

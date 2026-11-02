@@ -902,7 +902,8 @@ interface ArticleDao {
     @Query(
         """
         SELECT * FROM article
-        WHERE (rawDescription LIKE '%figcaption%' OR rawDescription LIKE '%[caption%')
+        WHERE (rawDescription LIKE '%figcaption%' OR rawDescription LIKE '%[caption%'
+                OR rawDescription LIKE '%audioPlayerArticle%')
             AND id > :afterId
         ORDER BY id
         LIMIT :limit

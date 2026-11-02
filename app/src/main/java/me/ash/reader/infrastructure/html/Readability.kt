@@ -13,12 +13,16 @@ object Readability {
 
     private val captionShortcodeRegex = Regex("""\[[^\]]*caption[^\]]*\][\s\S]*?\[/caption\]""")
     private val figcaptionRegex = Regex("""<figcaption[^>]*>[\s\S]*?</figcaption>""")
+    private val audioPlayerRegex = Regex("""<div[^>]*id="audioPlayerArticle"[^>]*>[\s\S]*?</div>""")
 
     fun parseToText(htmlContent: String?, uri: String?): String {
         htmlContent ?: return ""
         return try {
             val content =
-                figcaptionRegex.replace(captionShortcodeRegex.replace(htmlContent, ""), "")
+                audioPlayerRegex.replace(
+                    figcaptionRegex.replace(captionShortcodeRegex.replace(htmlContent, ""), ""),
+                    "",
+                )
             Readability4JExtended(uri, content).parse().textContent?.trim() ?: ""
         } catch (e: Exception) {
             Log.e("RLog", "Readability.parseToText '$uri' is error: ", e)
