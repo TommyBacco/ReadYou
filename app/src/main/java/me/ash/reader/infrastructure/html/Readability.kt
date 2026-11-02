@@ -11,10 +11,15 @@ import org.jsoup.nodes.Element
 
 object Readability {
 
+    private val captionShortcodeRegex = Regex("""\[[^\]]*caption[^\]]*\][\s\S]*?\[/caption\]""")
+    private val figcaptionRegex = Regex("""<figcaption[^>]*>[\s\S]*?</figcaption>""")
+
     fun parseToText(htmlContent: String?, uri: String?): String {
         htmlContent ?: return ""
         return try {
-            Readability4JExtended(uri, htmlContent).parse().textContent?.trim() ?: ""
+            val content =
+                figcaptionRegex.replace(captionShortcodeRegex.replace(htmlContent, ""), "")
+            Readability4JExtended(uri, content).parse().textContent?.trim() ?: ""
         } catch (e: Exception) {
             Log.e("RLog", "Readability.parseToText '$uri' is error: ", e)
             ""
