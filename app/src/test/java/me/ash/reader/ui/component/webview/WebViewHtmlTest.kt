@@ -1,5 +1,6 @@
 package me.ash.reader.ui.component.webview
 
+import me.ash.reader.ui.component.reader.Video
 import org.junit.Assert
 import org.junit.Test
 
@@ -38,5 +39,25 @@ class WebViewHtmlTest {
             "&lt;script&gt;",
             WebViewHtml.escapeAttribute("<script>"),
         )
+    }
+
+    @Test
+    fun testVideoFallback() {
+        val html =
+            WebViewHtml.videoFallback(
+                video =
+                    Video(
+                        src = "https://invidious.example/embed/cjxnVO9RpaQ",
+                        imageUrl = "https://invidious.example/vi/cjxnVO9RpaQ/hqdefault.jpg",
+                        link = "https://invidious.example/watch?v=cjxnVO9RpaQ",
+                    ),
+                playLabel = "Touch to play video",
+            )
+        Assert.assertTrue(html.contains("href=\"https://invidious.example/watch?v=cjxnVO9RpaQ\""))
+        Assert.assertTrue(html.contains("target=\"_top\""))
+        Assert.assertTrue(
+            html.contains("src=\"https://invidious.example/vi/cjxnVO9RpaQ/hqdefault.jpg\"")
+        )
+        Assert.assertTrue(html.contains("Touch to play video"))
     }
 }
