@@ -7,6 +7,7 @@ import net.dankito.readability4j.extended.util.RegExUtilExtended
 import net.dankito.readability4j.model.ReadabilityOptions
 import net.dankito.readability4j.processor.MetadataParser
 import net.dankito.readability4j.processor.Preprocessor
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 object Readability {
@@ -55,6 +56,7 @@ object Readability {
                 ?.groupValues
                 ?.get(2)
                 ?.replace(Regex("<[^>]+>"), "")
+                ?.let { Jsoup.parse(it).text() }
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?: return html to ""

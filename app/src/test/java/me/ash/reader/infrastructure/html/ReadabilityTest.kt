@@ -61,7 +61,7 @@ class ReadabilityTest {
                 "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head>\n" +
                 "<body>\n" +
                 "<article>\n <div data-sanitized-class=\"index_main-content__header___h72f \">\n" +
-                "  <h2>Quasi tutte nella zona orientale della città, e molte indirizzate ad attività commerciali: per ora ci sono solo ipotesi</h2>\n" +
+                "  <h2>Quasi tutte nella zona orientale della citt&agrave;, e molte indirizzate ad attivit&agrave; commerciali: per ora ci sono solo ipotesi</h2>\n" +
                 " </div>\n" +
                 " <div data-sanitized-id=\"singleBody\" data-sanitized-class=\"contenuto all \">\n" +
                 (1..20)
@@ -69,7 +69,8 @@ class ReadabilityTest {
                 "\n </div>\n</article>\n" +
                 "</body></html>"
         val result = Readability.parseToText(html, "https://www.ilpost.it/2026/11/04/bombe-roma-est/")
-        assertTrue(result.startsWith("Quasi tutte nella zona orientale della città"))
+        assertTrue(result.startsWith("Quasi tutte nella zona orientale della città, e molte indirizzate"))
+        assertFalse(result.contains("&agrave;"))
     }
 
     @Test
