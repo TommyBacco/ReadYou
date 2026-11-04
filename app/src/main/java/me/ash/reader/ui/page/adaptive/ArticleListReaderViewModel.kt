@@ -326,8 +326,10 @@ constructor(
             if (articleWithFeed.feed.isFullContent) {
                 val fullContent =
                     readerCacheHelper.readFullContent(articleWithFeed.article.id).getOrNull()
-                if (fullContent != null) ReaderState.FullContent(fullContent)
-                else {
+                if (fullContent != null) {
+                    readerCacheHelper.refreshSnippet(articleWithFeed.article, fullContent)
+                    ReaderState.FullContent(fullContent)
+                } else {
                     renderFullContent()
                     ReaderState.Loading
                 }

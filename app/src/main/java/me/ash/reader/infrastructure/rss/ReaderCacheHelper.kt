@@ -76,7 +76,8 @@ constructor(
         }
     }
 
-    private suspend fun refreshSnippet(article: Article, fullContent: String) {
+    @CheckResult
+    suspend fun refreshSnippet(article: Article, fullContent: String) = withContext(ioDispatcher) {
         val snippet = Readability.parseToText(fullContent, article.link).take(280)
         if (snippet.isNotEmpty() && snippet != article.shortDescription) {
             articleDao.update(article.copy(shortDescription = snippet))

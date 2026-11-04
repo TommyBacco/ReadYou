@@ -14,7 +14,8 @@ object Readability {
     private val captionShortcodeRegex = Regex("""\[[^\]]*caption[^\]]*\][\s\S]*?\[/caption\]""")
     private val figcaptionRegex = Regex("""<figcaption[^>]*>[\s\S]*?</figcaption>""")
     private val audioPlayerRegex = Regex("""<div[^>]*id="audioPlayerArticle"[^>]*>[\s\S]*?</div>""")
-    private val leadingHeadingRegex = Regex("""^\s*(?:<h[123]\b[^>]*>[\s\S]*?</h[123]>\s*)+""")
+    private val leadingWrapperRegex = Regex("""^\s*(?:<(?:article|main|section|header|div)\b[^>]*>\s*)*""")
+    private val leadingHeadingRegex = Regex("""(?:<h[123]\b[^>]*>[\s\S]*?</h[123]>\s*)+""")
     private val headingRegex = Regex("""<h([123])\b[^>]*>([\s\S]*?)</h[123]>""")
 
     fun parseToText(htmlContent: String?, uri: String?): String {
@@ -39,13 +40,17 @@ object Readability {
         return Readability4JExtended(uri, htmlContent).parse().articleContent
     }
 
-    private fun keepLeadingHeading(html: String): String =
-        leadingHeadingRegex.replace(html) { leading ->
-            headingRegex.replace(leading.value) { heading ->
+    private fun keepLeadingHeading(html: String): String {
+        val wrappers = leadingWrapperRegex.matchAt(html, 0) ?: return html
+        val headingStart = wrappers.range.last + 1
+        val headings = leadingHeadingRegex.matchAt(html, headingStart) ?: return html
+        val converted =
+            headingRegex.replace(headings.value) { heading ->
                 if (heading.groupValues[1] == "1") ""
                 else "<p><strong>${heading.groupValues[2]}</strong></p>"
             }
-        }
+        return html.replaceRange(headings.range, converted)
+    }
 
     private fun Readability4JExtended(uri: String?, html: String): Readability4JExtended {
         val options = ReadabilityOptions()

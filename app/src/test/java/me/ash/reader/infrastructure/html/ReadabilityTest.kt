@@ -95,6 +95,24 @@ class ReadabilityTest {
     }
 
     @Test
+    fun testParseToTextKeepsLeadingHeadingBehindWrappers() {
+        val result =
+            Readability.parseToText(
+                "<article>\n <div class=\"index_main-content__header\">\n" +
+                    "<h2>Poi ci sono state proteste e il comune di Roma è intervenuto</h2>" +
+                    (1..20)
+                        .joinToString(" ") {
+                            "<p>Una ringhiera dei Fori Imperiali di Roma è stata ricoperta, " +
+                                "paragrafo $it.</p>"
+                        } +
+                    "\n</div>\n</article>",
+                "https://example.com/post",
+            )
+        assertTrue(result.startsWith("Poi ci sono state proteste e il comune di Roma è intervenuto"))
+        assertTrue(result.contains("paragrafo 1"))
+    }
+
+    @Test
     fun testParseToTextSkipsRepeatedLeadingH1() {
         val result =
             Readability.parseToText(
