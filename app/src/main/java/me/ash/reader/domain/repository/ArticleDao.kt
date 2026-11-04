@@ -899,6 +899,18 @@ interface ArticleDao {
     @Insert
     suspend fun insertList(articles: List<Article>)
 
+    @Query(
+        """
+        SELECT * FROM article
+        WHERE (rawDescription LIKE '%figcaption%' OR rawDescription LIKE '%[caption%'
+                OR rawDescription LIKE '%audioPlayerArticle%')
+            AND id > :afterId
+        ORDER BY id
+        LIMIT :limit
+        """
+    )
+    suspend fun queryCaptionCandidates(afterId: String, limit: Int): List<Article>
+
     @Delete
     suspend fun delete(vararg article: Article)
 

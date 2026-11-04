@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.util.Consumer
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -30,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.service.AccountService
+import me.ash.reader.domain.service.SnippetRefreshService
 import me.ash.reader.domain.service.WidgetUpdateWorker
 import me.ash.reader.infrastructure.compose.ProvideCompositionLocals
 import me.ash.reader.infrastructure.preference.AccountSettingsProvider
@@ -60,6 +62,8 @@ class MainActivity : AppCompatActivity() {
 
     @Inject lateinit var filterUseCase: FilterStateUseCase
 
+    @Inject lateinit var snippetRefreshService: SnippetRefreshService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.i("RLog", "onCreate: ${ProfileInstallerInitializer().create(this)}")
@@ -80,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e("RLog", "Unable to increase cursor window size: ${e.printStackTrace()}")
         }
+        lifecycleScope.launch { snippetRefreshService.refreshSnippetWithCaptions() }
 
         val requestPermissionLauncher =
             this.registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted
