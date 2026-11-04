@@ -4,15 +4,18 @@ import android.util.Log
 import android.webkit.WebSettings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import me.ash.reader.infrastructure.preference.InvidiousInstancePreference
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalReadingBoldCharacters
@@ -45,9 +48,19 @@ fun RYWebView(
 ) {
     val context = LocalContext.current
     val resolvedBaseUrl = WebViewHtml.resolveBaseUrl(baseUrl)
+    var instanceHost by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { instanceHost = InvidiousInstancePreference.get(context) }
+    LaunchedEffect(content) {
+        WebViewContent.detectInstanceHost(content)?.let { detected ->
+            if (detected != instanceHost) {
+                instanceHost = detected
+                InvidiousInstancePreference.put(context, detected)
+            }
+        }
+    }
     val renderedContent =
-        remember(content, resolvedBaseUrl) {
-            WebViewContent.rewrite(content, resolvedBaseUrl)
+        remember(content, resolvedBaseUrl, instanceHost) {
+            WebViewContent.rewrite(content, resolvedBaseUrl, instanceHost)
         }
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current

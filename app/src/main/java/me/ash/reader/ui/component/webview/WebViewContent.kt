@@ -23,19 +23,19 @@ object WebViewContent {
             "youtu.be",
         )
 
-    fun rewrite(html: String, baseUrl: String?): String {
+    fun rewrite(html: String, baseUrl: String?, instanceHost: String? = null): String {
         if (html.isBlank()) return html
         val document = Jsoup.parse(html, baseUrl ?: "")
-        val instanceHost = detectInstanceHost(document)
+        val effectiveInstanceHost = instanceHost ?: detectInstanceHost(document.body().html())
         rewriteAudioPlayers(document)
-        rewriteVideoPlayers(document, instanceHost)
-        rewriteVideoIframes(document, instanceHost)
+        rewriteVideoPlayers(document, effectiveInstanceHost)
+        rewriteVideoIframes(document, effectiveInstanceHost)
         return document.body().html()
     }
 
-    private fun detectInstanceHost(document: Document): String? =
+    fun detectInstanceHost(html: String): String? =
         InstanceLinkPattern
-            .findAll(document.body().html())
+            .findAll(html)
             .map { match -> match.groupValues[1] }
             .firstOrNull { it !in youtubeHosts }
 

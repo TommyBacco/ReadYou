@@ -92,6 +92,21 @@ class WebViewContentTest {
     }
 
     @Test
+    fun testInstanceOverrideRedirectsYoutubeWithoutInArticleLink() {
+        val html =
+            """
+            <div class="ilPostSocial"
+                 data-component="ilPostSocial"
+                 data-type="youtube"
+                 data-url="https://www.youtube.com/embed/cjxnVO9RpaQ?feature=oembed"
+                 data-params="v=cjxnVO9RpaQ"
+                 data-thumbnail="https://i.ytimg.com/vi/cjxnVO9RpaQ/hqdefault.jpg"></div>
+            """
+        val rewritten = WebViewContent.rewrite(html, "https://www.ilpost.it/article/", "learned.example.com")
+        Assert.assertTrue(rewritten.contains("https://learned.example.com/embed/cjxnVO9RpaQ"))
+    }
+
+    @Test
     fun testSandboxAttrRemovedForVideoIframes() {
         val html =
             """
