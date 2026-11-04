@@ -21,14 +21,16 @@ object Readability {
     fun parseToText(htmlContent: String?, uri: String?): String {
         htmlContent ?: return ""
         return try {
-            val content =
-                keepLeadingHeading(
+            val (withoutHeading, headingText) =
+                extractLeadingHeading(
                     audioPlayerRegex.replace(
                         figcaptionRegex.replace(captionShortcodeRegex.replace(htmlContent, ""), ""),
                         "",
                     ),
                 )
-            Readability4JExtended(uri, content).parse().textContent?.trim() ?: ""
+            val text =
+                Readability4JExtended(uri, withoutHeading).parse().textContent?.trim() ?: ""
+            if (headingText.isEmpty()) text else "$headingText $text".trim()
         } catch (e: Exception) {
             Log.e("RLog", "Readability.parseToText '$uri' is error: ", e)
             ""
@@ -40,16 +42,21 @@ object Readability {
         return Readability4JExtended(uri, htmlContent).parse().articleContent
     }
 
-    private fun keepLeadingHeading(html: String): String {
-        val wrappers = leadingWrapperRegex.matchAt(html, 0) ?: return html
+    private fun extractLeadingHeading(html: String): Pair<String, String> {
+        val wrappers = leadingWrapperRegex.matchAt(html, 0) ?: return html to ""
         val headingStart = wrappers.range.last + 1
-        val headings = leadingHeadingRegex.matchAt(html, headingStart) ?: return html
-        val converted =
-            headingRegex.replace(headings.value) { heading ->
-                if (heading.groupValues[1] == "1") ""
-                else "<p><strong>${heading.groupValues[2]}</strong></p>"
-            }
-        return html.replaceRange(headings.range, converted)
+        val headings = leadingHeadingRegex.matchAt(html, headingStart) ?: return html to ""
+        val headingText =
+            headingRegex
+                .findAll(headings.value)
+                .firstOrNull { it.groupValues[1] != "1" }
+                ?.groupValues
+                ?.get(2)
+                ?.replace(Regex("<[^>]+>"), "")
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return html to ""
+        return html.replaceRange(headings.range, "") to headingText
     }
 
     private fun Readability4JExtended(uri: String?, html: String): Readability4JExtended {

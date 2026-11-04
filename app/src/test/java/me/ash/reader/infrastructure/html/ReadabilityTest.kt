@@ -55,6 +55,38 @@ class ReadabilityTest {
     }
 
     @Test
+    fun testParseToTextKeepsLeadingHeadingExactIlPostShape() {
+        val html =
+            "<article>\n" +
+                " <div data-sanitized-class=\"index_main-content__header___h72f \">\n" +
+                "  <h2>Quasi tutte nella zona orientale della città, e molte indirizzate ad attività commerciali: per ora ci sono solo ipotesi</h2>\n" +
+                "  <div data-sanitized-class=\"index_actions__NFnjX \">\n" +
+                "   <div data-sanitized-class=\"_saved_1hbvv_1\">\n" +
+                "    <div data-sanitized-class=\"_ilpost_saved_1hbvv_1 false\"></div>\n" +
+                "   </div>\n" +
+                "  </div>\n" +
+                " </div>\n" +
+                " <div data-sanitized-class=\"index_main-content__image___g7jQ\">\n" +
+                "  <figure>\n" +
+                "   <div>\n" +
+                "    <img alt=\"Bomba carta in Via Casilina 953\" src=\"https://static-prod.cdnilpost.com/x.jpg\">\n" +
+                "   </div>\n" +
+                "   <figcaption>Bomba carta in Via Casilina 953 davanti un autosalone</figcaption>\n" +
+                "  </figure>\n" +
+                " </div>\n" +
+                " <div data-sanitized-id=\"singleBody\" data-sanitized-class=\"contenuto all \">\n" +
+                (1..20)
+                    .joinToString(" ") {
+                        "<p>Da giugno nella zona est di Roma sono esplose 19 bombe, paragrafo $it.</p>"
+                    } +
+                "\n </div>\n" +
+                "</article>"
+        val result = Readability.parseToText(html, "https://www.ilpost.it/2026/11/04/bombe-roma-est/")
+        println("RESULT => ${result.take(80)}")
+        assertTrue(result.startsWith("Quasi tutte nella zona orientale"))
+    }
+
+    @Test
     fun testParseToTextStripsAudioPlayerPlaceholder() {
         assertEquals(
             "The lead paragraph of the article.",
