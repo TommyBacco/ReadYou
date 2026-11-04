@@ -10,15 +10,34 @@ import org.jsoup.nodes.Element
 object WebViewContent {
 
     private val VideoIdPattern = "(?:^|[?&])v=([A-Za-z0-9_-]{11})".toRegex()
+    private val InstanceLinkPattern =
+        "https?://([a-zA-Z0-9.-]+(?::\\d+)?)/(?:watch\\?v=|embed/)([A-Za-z0-9_-]{11})".toRegex()
+    private val YoutubeIdPattern = "youtube.com/embed/([A-Za-z0-9_-]{11})".toRegex()
+    private val youtubeHosts =
+        setOf(
+            "youtube.com",
+            "www.youtube.com",
+            "m.youtube.com",
+            "youtube-nocookie.com",
+            "www.youtube-nocookie.com",
+            "youtu.be",
+        )
 
     fun rewrite(html: String, baseUrl: String?): String {
         if (html.isBlank()) return html
         val document = Jsoup.parse(html, baseUrl ?: "")
+        val instanceHost = detectInstanceHost(document)
         rewriteAudioPlayers(document)
-        rewriteVideoPlayers(document)
-        rewriteVideoIframes(document)
+        rewriteVideoPlayers(document, instanceHost)
+        rewriteVideoIframes(document, instanceHost)
         return document.body().html()
     }
+
+    private fun detectInstanceHost(document: Document): String? =
+        InstanceLinkPattern
+            .findAll(document.body().html())
+            .map { match -> match.groupValues[1] }
+            .firstOrNull { it !in youtubeHosts }
 
     private fun rewriteAudioPlayers(document: Document) {
         document.select("div#audioPlayerArticle").forEach { element ->
@@ -38,17 +57,21 @@ object WebViewContent {
         }
     }
 
-    private fun rewriteVideoPlayers(document: Document) {
+    private fun rewriteVideoPlayers(document: Document, instanceHost: String?) {
         document.select("div[data-component=ilPostSocial], div[data-type]").forEach { element ->
-            val video = element.toVideo() ?: return@forEach
+            val video = element.toVideo(instanceHost) ?: return@forEach
             element.replaceWith(document.videoIframe(video))
         }
     }
 
-    private fun rewriteVideoIframes(document: Document) {
+    private fun rewriteVideoIframes(document: Document, instanceHost: String?) {
         document.select("iframe").forEach { iframe ->
-            if (getVideo(iframe.attr("abs:src")) != null) {
-                iframe.removeAttr("sandbox")
+            val video = getVideo(iframe.attr("abs:src")) ?: return@forEach
+            onInstance(video, instanceHost).takeIf { it != video }?.let { rewritten ->
+                iframe.attr("src", rewritten.src)
+            }
+            iframe.run {
+                removeAttr("sandbox")
                 val allow = iframe.attr("allow")
                 if (allow.isBlank()) {
                     iframe.attr("allow", "fullscreen")
@@ -59,25 +82,35 @@ object WebViewContent {
         }
     }
 
-    private fun Element.toVideo(): Video? {
+    private fun Element.toVideo(instanceHost: String?): Video? {
         val dataUrl = attr("data-url").takeIf { it.isNotBlank() }
         val thumbnail = attr("data-thumbnail").takeIf { it.isNotBlank() }
-        getVideo(dataUrl)?.let { video ->
-            return if (thumbnail != null && video.isYoutubeEmbed()) {
-                video.copy(imageUrl = thumbnail)
-            } else {
-                video
+        val video =
+            getVideo(dataUrl)?.let { detected ->
+                if (thumbnail != null && detected.isYoutubeEmbed()) {
+                    detected.copy(imageUrl = thumbnail)
+                } else {
+                    detected
+                }
             }
-        }
-
-        val videoId =
-            VideoIdPattern.find(attr("data-params"))?.groupValues?.get(1)
-                ?: VideoIdPattern.find(dataUrl.orEmpty())?.groupValues?.get(1)
+                ?: VideoIdPattern.find(attr("data-params"))?.groupValues?.get(1)?.let { videoId ->
+                    Video(
+                        src = dataUrl ?: "https://www.youtube.com/embed/$videoId",
+                        imageUrl = thumbnail ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg",
+                        link = "https://www.youtube.com/watch?v=$videoId",
+                    )
+                }
                 ?: return null
-        return Video(
-            src = dataUrl ?: "https://www.youtube.com/embed/$videoId",
-            imageUrl = thumbnail ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg",
-            link = "https://www.youtube.com/watch?v=$videoId",
+        return onInstance(video, instanceHost)
+    }
+
+    private fun onInstance(video: Video, instanceHost: String?): Video {
+        if (instanceHost == null) return video
+        val videoId = YoutubeIdPattern.find(video.src)?.groupValues?.get(1) ?: return video
+        return video.copy(
+            src = "https://$instanceHost/embed/$videoId",
+            imageUrl = "https://$instanceHost/vi/$videoId/hqdefault.jpg",
+            link = "https://$instanceHost/watch?v=$videoId",
         )
     }
 

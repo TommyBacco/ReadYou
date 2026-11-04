@@ -63,6 +63,35 @@ class WebViewContentTest {
     }
 
     @Test
+    fun testIlPostPlayerUsesInstanceFromSameArticle() {
+        val html =
+            """
+            <p>Video mentioned <a href="https://instance.example.com/watch?v=cjxnVO9RpaQ">here</a>.</p>
+            <div class="ilPostSocial"
+                 data-component="ilPostSocial"
+                 data-type="youtube"
+                 data-url="https://www.youtube.com/embed/cjxnVO9RpaQ?feature=oembed"
+                 data-params="v=cjxnVO9RpaQ"
+                 data-thumbnail="https://i.ytimg.com/vi/cjxnVO9RpaQ/hqdefault.jpg"></div>
+            """
+        val rewritten = WebViewContent.rewrite(html, "https://www.ilpost.it/article/")
+        Assert.assertTrue(rewritten.contains("https://instance.example.com/embed/cjxnVO9RpaQ"))
+    }
+
+    @Test
+    fun testYoutubeIframeRedirectedToInstance() {
+        val html =
+            """
+            <p><a href="https://instance.example.com/watch?v=cjxnVO9RpaQ">link</a></p>
+            <iframe src="https://www.youtube.com/embed/cjxnVO9RpaQ?feature=oembed"></iframe>
+            """
+        val rewritten = WebViewContent.rewrite(html, "https://www.ilpost.it/article/")
+        val document = org.jsoup.Jsoup.parse(rewritten)
+        val iframeSrc = document.select("iframe").attr("src")
+        Assert.assertTrue(iframeSrc.contains("https://instance.example.com/embed/cjxnVO9RpaQ"))
+    }
+
+    @Test
     fun testSandboxAttrRemovedForVideoIframes() {
         val html =
             """
