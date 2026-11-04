@@ -8,6 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.service.RssService
 import me.ash.reader.domain.data.DiffMapHolder
 import me.ash.reader.domain.service.AccountService
@@ -40,9 +41,11 @@ object CacheHolderModule {
         @IODispatcher ioDispatcher: CoroutineDispatcher,
         rssHelper: RssHelper,
         accountService: AccountService,
+        articleDao: ArticleDao,
     ): ReaderCacheHelper = ReaderCacheHelper(
         context = context, ioDispatcher = ioDispatcher,
         rssHelper = rssHelper,
         accountService = accountService,
+        articleDao = articleDao,
     )
 }

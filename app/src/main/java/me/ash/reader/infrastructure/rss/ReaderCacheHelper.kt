@@ -10,8 +10,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.article.Article
+import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.infrastructure.di.IODispatcher
+import me.ash.reader.infrastructure.html.Readability
 
 class ReaderCacheHelper
 @Inject
@@ -20,6 +22,7 @@ constructor(
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     private val rssHelper: RssHelper,
     private val accountService: AccountService,
+    private val articleDao: ArticleDao,
 ) {
     private val cacheDir = context.cacheDir.resolve("readability")
     private val md = MessageDigest.getInstance("SHA-256")
@@ -66,9 +69,17 @@ constructor(
                 val fullContent = rssHelper.parseFullContent(article.link, article.title)
                 if (fullContent.isNotBlank()) {
                     writeContentToCache(fullContent, article.id)
+                    refreshSnippet(article, fullContent)
                     fullContent
                 } else return@withContext Result.failure(Exception())
             }
+        }
+    }
+
+    private suspend fun refreshSnippet(article: Article, fullContent: String) {
+        val snippet = Readability.parseToText(fullContent, article.link).take(280)
+        if (snippet.isNotEmpty() && snippet != article.shortDescription) {
+            articleDao.update(article.copy(shortDescription = snippet))
         }
     }
 
