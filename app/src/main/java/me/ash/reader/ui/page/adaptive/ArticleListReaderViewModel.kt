@@ -1,6 +1,7 @@
 package me.ash.reader.ui.page.adaptive
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -322,6 +323,7 @@ constructor(
     }
 
     suspend fun ReaderState.renderContent(articleWithFeed: ArticleWithFeed): ReaderState {
+        Log.i("RLog", "renderContent: fullContent=${articleWithFeed.feed.isFullContent}")
         val contentState =
             if (articleWithFeed.feed.isFullContent) {
                 val fullContent =
@@ -333,7 +335,13 @@ constructor(
                     renderFullContent()
                     ReaderState.Loading
                 }
-            } else ReaderState.Description(articleWithFeed.article.rawDescription)
+            } else {
+                readerCacheHelper.refreshSnippet(
+                    articleWithFeed.article,
+                    articleWithFeed.article.rawDescription,
+                )
+                ReaderState.Description(articleWithFeed.article.rawDescription)
+            }
 
         return copy(content = contentState)
     }

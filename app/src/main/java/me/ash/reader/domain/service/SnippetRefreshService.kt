@@ -47,7 +47,7 @@ class SnippetRefreshService @Inject constructor(
     }
 
     companion object {
-        private const val SNIPPET_VERSION = 3
+        private const val SNIPPET_VERSION = 4
         private const val PAGE_SIZE = 500
     }
 }

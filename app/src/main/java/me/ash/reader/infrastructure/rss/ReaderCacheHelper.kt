@@ -1,6 +1,7 @@
 package me.ash.reader.infrastructure.rss
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.CheckResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -79,6 +80,7 @@ constructor(
     @CheckResult
     suspend fun refreshSnippet(article: Article, fullContent: String) = withContext(ioDispatcher) {
         val snippet = Readability.parseToText(fullContent, article.link).take(280)
+        Log.i("RLog", "refreshSnippet: \"${snippet.take(60)}\" (stored=\"${article.shortDescription.take(60)}\")")
         if (snippet.isNotEmpty() && snippet != article.shortDescription) {
             articleDao.update(article.copy(shortDescription = snippet))
         }
