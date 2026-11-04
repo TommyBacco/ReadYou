@@ -55,6 +55,24 @@ class ReadabilityTest {
     }
 
     @Test
+    fun testParseToTextKeepsLeadingHeadingInsideFullDocument() {
+        val html =
+            "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">\n" +
+                "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head>\n" +
+                "<body>\n" +
+                "<article>\n <div data-sanitized-class=\"index_main-content__header___h72f \">\n" +
+                "  <h2>Quasi tutte nella zona orientale della città, e molte indirizzate ad attività commerciali: per ora ci sono solo ipotesi</h2>\n" +
+                " </div>\n" +
+                " <div data-sanitized-id=\"singleBody\" data-sanitized-class=\"contenuto all \">\n" +
+                (1..20)
+                    .joinToString(" ") { "<p>Da giugno nella zona est di Roma sono esplose 19 bombe, paragrafo $it.</p>" } +
+                "\n </div>\n</article>\n" +
+                "</body></html>"
+        val result = Readability.parseToText(html, "https://www.ilpost.it/2026/11/04/bombe-roma-est/")
+        assertTrue(result.startsWith("Quasi tutte nella zona orientale della città"))
+    }
+
+    @Test
     fun testParseToTextKeepsLeadingHeadingExactIlPostShape() {
         val html =
             "<article>\n" +

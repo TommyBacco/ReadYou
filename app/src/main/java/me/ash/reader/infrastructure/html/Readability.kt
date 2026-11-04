@@ -17,6 +17,7 @@ object Readability {
     private val leadingWrapperRegex = Regex("""^\s*(?:<(?:article|main|section|header|div)\b[^>]*>\s*)*""")
     private val leadingHeadingRegex = Regex("""(?:<h[123]\b[^>]*>[\s\S]*?</h[123]>\s*)+""")
     private val headingRegex = Regex("""<h([123])\b[^>]*>([\s\S]*?)</h[123]>""")
+    private val documentPrefixRegex = Regex("""^[\s\S]*?<body\b[^>]*>\s*""")
 
     fun parseToText(htmlContent: String?, uri: String?): String {
         htmlContent ?: return ""
@@ -42,7 +43,8 @@ object Readability {
         return Readability4JExtended(uri, htmlContent).parse().articleContent
     }
 
-    private fun extractLeadingHeading(html: String): Pair<String, String> {
+    private fun extractLeadingHeading(document: String): Pair<String, String> {
+        val html = if (document.contains("<body")) documentPrefixRegex.replaceFirst(document, "").toString() else document
         val wrappers = leadingWrapperRegex.matchAt(html, 0) ?: return html to ""
         val headingStart = wrappers.range.last + 1
         val headings = leadingHeadingRegex.matchAt(html, headingStart) ?: return html to ""
