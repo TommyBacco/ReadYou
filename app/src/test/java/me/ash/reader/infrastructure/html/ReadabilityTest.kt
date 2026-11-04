@@ -1,6 +1,8 @@
 package me.ash.reader.infrastructure.html
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReadabilityTest {
@@ -74,6 +76,38 @@ class ReadabilityTest {
                 "https://example.com/post",
             ),
         )
+    }
+
+    @Test
+    fun testParseToTextKeepsLeadingHeading() {
+        val result =
+            Readability.parseToText(
+                "<h2>Il governo vuole togliere soldi a molti pensionati</h2>" +
+                    (1..20)
+                        .joinToString(" ") {
+                            "<p>Nel disegno di legge di bilancio il governo ha inserito misure " +
+                                "paradossali e contraddittorie sulle pensioni, paragrafo $it.</p>"
+                        },
+                "https://example.com/post",
+            )
+        assertTrue(result.startsWith("Il governo vuole togliere soldi a molti pensionati"))
+        assertTrue(result.contains("paragrafo 1"))
+    }
+
+    @Test
+    fun testParseToTextSkipsRepeatedLeadingH1() {
+        val result =
+            Readability.parseToText(
+                "<h1>Article Title</h1>" +
+                    "<h2>Subtitle text</h2>" +
+                    (1..20)
+                        .joinToString(" ") {
+                            "<p>Real body content of the article that is long enough, paragrafo $it.</p>"
+                        },
+                "https://example.com/post",
+            )
+        assertFalse(result.startsWith("Article Title"))
+        assertTrue(result.startsWith("Subtitle text"))
     }
 
     @Test
