@@ -88,7 +88,10 @@ constructor(
         return withContext(ioDispatcher) {
             runCatching {
                 val result = readFullContent(article.id)
-                if (result.isSuccess) return@withContext result
+                if (result.isSuccess) {
+                    result.getOrNull()?.let { content -> refreshSnippet(article, content) }
+                    return@withContext result
+                }
                 return@withContext fetchFullContentInternal(article)
             }
         }
